@@ -1,0 +1,22 @@
+info:
+  name: wallet-balance
+  type: http
+  seq: 12
+
+http:
+  method: GET
+  url: "{{server}}/wallets/:id/balance"
+  headers:
+    - name: Authorization
+      value: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwYzFiNmQzNy1hZDI2LTQwOWUtYWZlZS1lM2Y0MDU0ZjU3NDYiLCJlbWFpbCI6InRlc3RAZW1haWwuY29tIiwicm9sZSI6IkNVU1RPTUVSIiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc5MDY4MDc5MiwiZXhwIjoxNzkwNjgxNjkyfQ.XRdTi2oiQR0LpoujyKkFg5jcffIrODVllSDvW0rOb3w
+  params:
+    - name: id
+      value: 2f72063e-0174-4858-8c84-0882298e62b0
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

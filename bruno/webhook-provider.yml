@@ -1,0 +1,46 @@
+info:
+  name: webhook-provider
+  type: http
+  seq: 16
+
+http:
+  method: POST
+  url: "{{server}}/webhooks/payment-provider"
+  body:
+    type: json
+    data: |-
+      {
+        "eventId": "test-evt-001",
+        "type": "payment.succeeded",
+        "walletId": "2f72063e-0174-4858-8c84-0882298e62b0",
+        "amount": 5000,
+        "currency": "INR"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const CryptoJS = require('crypto-js');
+
+        const secret = bru.getEnvVar('PAYMENT_WEBHOOK_SECRET');
+
+        const bodyString = JSON.stringify({
+          eventId: "test-evt-001",
+          type: "payment.succeeded",
+          walletId: "2f72063e-0174-4858-8c84-0882298e62b0",
+          amount: 5000,
+          currency: "INR"
+        });
+
+        const signature = CryptoJS.HmacSHA256(bodyString, secret).toString(CryptoJS.enc.Hex);
+
+        req.setHeader('x-webhook-signature', signature);
+        req.setBody(bodyString);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

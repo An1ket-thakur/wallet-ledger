@@ -1,0 +1,28 @@
+info:
+  name: transaction-transfer
+  type: http
+  seq: 15
+
+http:
+  method: POST
+  url: "{{server}}/transactions/transfer"
+  headers:
+    - name: Authorization
+      value: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwYzFiNmQzNy1hZDI2LTQwOWUtYWZlZS1lM2Y0MDU0ZjU3NDYiLCJlbWFpbCI6InRlc3RAZW1haWwuY29tIiwicm9sZSI6IkNVU1RPTUVSIiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc5MDY4MDc5MiwiZXhwIjoxNzkwNjgxNjkyfQ.XRdTi2oiQR0LpoujyKkFg5jcffIrODVllSDvW0rOb3w
+    - name: idempotency-key
+      value: "1331"
+  body:
+    type: json
+    data: |-
+      {
+        "fromWalletId": "53fbf3c1-4014-4eab-9caa-ed3b346b5dd9",
+        "toWalletId": "2f72063e-0174-4858-8c84-0882298e62b0",
+        "amount": 50
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

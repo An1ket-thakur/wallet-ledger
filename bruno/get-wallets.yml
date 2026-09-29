@@ -1,0 +1,18 @@
+info:
+  name: get-wallets
+  type: http
+  seq: 9
+
+http:
+  method: GET
+  url: "{{server}}/wallets"
+  headers:
+    - name: Authorization
+      value: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwYzFiNmQzNy1hZDI2LTQwOWUtYWZlZS1lM2Y0MDU0ZjU3NDYiLCJlbWFpbCI6InRlc3RAZW1haWwuY29tIiwicm9sZSI6IkNVU1RPTUVSIiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTc5MDY2MTY0MywiZXhwIjoxNzkwNjYyNTQzfQ.E0Ef7ZX3bIPFu1538aNc972i_Gk8gIJlDm5X3iqdvPc
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

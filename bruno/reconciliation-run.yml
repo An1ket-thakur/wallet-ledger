@@ -1,0 +1,18 @@
+info:
+  name: reconciliation-run
+  type: http
+  seq: 17
+
+http:
+  method: POST
+  url: "{{server}}/reconciliation/run"
+  headers:
+    - name: Authorization
+      value: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxZDhlMGU5YS1lYTVjLTRiZmMtODQxZi03Zjg0YmNiNTdhY2UiLCJlbWFpbCI6ImFkbWluQGVtYWlsLmNvbSIsInJvbGUiOiJBRE1JTiIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3OTA3NzI0NTAsImV4cCI6MTc5MDc3MzM1MH0.NEJvEZmiPS813fCicaGhLyX9Gqv60D2ZnjenK7z_PJk
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

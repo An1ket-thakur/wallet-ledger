@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
 import { LedgerEntry } from '../database/entities/ledger-entry.entity';
 import { Transaction } from '../database/entities/transaction.entity';
@@ -15,33 +19,40 @@ import {
 } from './ledger.error';
 
 export interface PostDoubleEntryInput {
-  /** Wallet losing value. */
   debitWalletId: string;
-  /** Wallet gaining value. */
   creditWalletId: string;
-  /** Minor units (cents). Must be > 0 - also enforced by the DB CHECK. */
   amount: bigint;
   currency: string;
   type: TransactionType;
-  /** Set only when type = REVERSAL. */
   reversesTransactionId?: string;
   initiatedBy?: string | null;
   metadata?: Record<string, unknown> | null;
-  /**
-   * System wallets (platform cash) are allowed to go negative - they represent
-   * what the platform owes users, not a spendable balance. User wallets are
-   * checked for sufficient funds unless explicitly skipped (e.g. admin credit adjustments
-   * should still go through a review flow, not this flag - it's here for system-side debits only).
-   */
   skipOverdraftCheckForDebit?: boolean;
+  /**
+   * If provided, posts entries against an EXISTING PENDING transaction
+   * (created via createPendingTransaction) instead of creating a new one.
+   * Used for the two-phase PENDING -> POSTED flow (e.g. async withdrawals).
+   */
+  existingTransactionId?: string;
+}
+
+export interface CreatePendingTransactionInput {
+  type: TransactionType;
+  initiatedBy?: string | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 /**
  * The ONLY place that writes to ledger_entries / transactions.
- * Every method that mutates the ledger must be called with an EntityManager
- * that belongs to an already-open DB transaction with both wallets locked
- * (see TransactionsService for the locking pattern) - this service does not
- * open transactions or acquire locks itself.
+ *
+ * Two paths through this service:
+ *  - Synchronous (deposit, transfer, refund): call postDoubleEntry() directly.
+ *    It creates the Transaction as POSTED and writes both entries in one go.
+ *  - Asynchronous (e.g. withdrawal to an external processor): call
+ *    createPendingTransaction() first, do the external call, then EITHER
+ *    postDoubleEntry({ existingTransactionId }) on success OR
+ *    markTransactionFailed() on failure. A PENDING transaction never has
+ *    ledger entries; a FAILED one never gets any either.
  */
 @Injectable()
 export class LedgerService {
@@ -65,18 +76,37 @@ export class LedgerService {
   }
 
   /**
-   * Writes one Transaction + two balanced LedgerEntry rows (one DEBIT, one CREDIT)
-   * inside the caller's transaction. Does NOT lock rows - the caller must already
-   * hold row locks on both wallets (SELECT ... FOR UPDATE) before calling this,
-   * or the overdraft check below can race with a concurrent debit on the same wallet.
+   * Phase 1 of an async flow: record intent before anything external happens.
+   * No ledger entries yet - the transaction exists purely as an audit trail
+   * of "this was attempted", so if the process crashes right after this call
+   * and before the external processor responds, you still have a PENDING
+   * record to reconcile/investigate rather than nothing at all.
+   */
+  async createPendingTransaction(
+    manager: EntityManager,
+    input: CreatePendingTransactionInput,
+  ): Promise<Transaction> {
+    return manager.getRepository(Transaction).save(
+      manager.getRepository(Transaction).create({
+        type: input.type,
+        status: TransactionStatus.PENDING,
+        initiatedBy: input.initiatedBy ?? null,
+        metadata: input.metadata ?? null,
+      }),
+    );
+  }
+
+  /**
+   * Phase 2a (success): posts the balanced entries and flips PENDING -> POSTED.
+   * Also used directly (without a prior createPendingTransaction call) for
+   * synchronous flows, where existingTransactionId is omitted and a fresh
+   * POSTED transaction is created in one step.
    */
   async postDoubleEntry(
     manager: EntityManager,
     input: PostDoubleEntryInput,
   ): Promise<Transaction> {
     if (input.amount <= 0n) {
-      // Redundant with the DB CHECK, but fail fast with a clear message
-      // instead of letting a generic Postgres constraint error bubble up.
       throw new InsufficientFundsException(input.debitWalletId);
     }
 
@@ -100,8 +130,6 @@ export class LedgerService {
       throw new CurrencyMismatchException();
     }
 
-    // System wallets (system_code set) are the platform's own float and are
-    // allowed to go negative; only a user-owned wallet is overdraft-checked.
     const isSystemDebitWallet = debitWallet.systemCode !== null;
     if (!isSystemDebitWallet && !input.skipOverdraftCheckForDebit) {
       const currentBalance = await this.getBalance(debitWallet.id, manager);
@@ -110,18 +138,29 @@ export class LedgerService {
       }
     }
 
-    const transaction = await manager.getRepository(Transaction).save(
-      manager.getRepository(Transaction).create({
-        type: input.type,
-        status: TransactionStatus.POSTED,
-        reversesTransactionId: input.reversesTransactionId ?? null,
-        initiatedBy: input.initiatedBy ?? null,
-        metadata: input.metadata ?? null,
-      }),
-    );
+    let transaction: Transaction;
 
-    // Insert both entries in one statement so they're in the same round trip;
-    // the DEFERRED constraint trigger still validates balance at COMMIT regardless.
+    if (input.existingTransactionId) {
+      transaction = await this.claimPendingTransaction(
+        manager,
+        input.existingTransactionId,
+      );
+      transaction.status = TransactionStatus.POSTED;
+      if (input.metadata)
+        transaction.metadata = { ...transaction.metadata, ...input.metadata };
+      await manager.getRepository(Transaction).save(transaction);
+    } else {
+      transaction = await manager.getRepository(Transaction).save(
+        manager.getRepository(Transaction).create({
+          type: input.type,
+          status: TransactionStatus.POSTED,
+          reversesTransactionId: input.reversesTransactionId ?? null,
+          initiatedBy: input.initiatedBy ?? null,
+          metadata: input.metadata ?? null,
+        }),
+      );
+    }
+
     await manager.getRepository(LedgerEntry).insert([
       {
         transactionId: transaction.id,
@@ -143,11 +182,54 @@ export class LedgerService {
   }
 
   /**
-   * Locks a wallet row for update within the caller's transaction. Callers that
-   * need to lock two wallets (a transfer) MUST always lock them in a fixed order
-   * (e.g. by id, ascending) to avoid deadlocks between two transfers going in
-   * opposite directions between the same pair of wallets.
+   * Phase 2b (failure): marks a PENDING transaction as FAILED. NEVER writes
+   * ledger entries - a failed transaction, by definition, moved no money, so
+   * the books must show nothing happened. The row survives only as an audit
+   * trail of "this was attempted and did not go through", plus the reason.
    */
+  async markTransactionFailed(
+    manager: EntityManager,
+    transactionId: string,
+    reason: string,
+  ): Promise<Transaction> {
+    const transaction = await this.claimPendingTransaction(
+      manager,
+      transactionId,
+    );
+
+    transaction.status = TransactionStatus.FAILED;
+    transaction.metadata = { ...transaction.metadata, failureReason: reason };
+
+    return manager.getRepository(Transaction).save(transaction);
+  }
+
+  /**
+   * Loads a transaction and asserts it's still PENDING before letting a
+   * caller resolve it either way. Prevents resolving the same transaction
+   * twice (e.g. a duplicate webhook callback trying to both post AND fail
+   * the same withdrawal).
+   */
+  private async claimPendingTransaction(
+    manager: EntityManager,
+    transactionId: string,
+  ): Promise<Transaction> {
+    const transaction = await manager
+      .getRepository(Transaction)
+      .createQueryBuilder('t')
+      .setLock('pessimistic_write')
+      .where('t.id = :transactionId', { transactionId })
+      .getOne();
+
+    if (!transaction)
+      throw new NotFoundException(`Transaction ${transactionId} not found`);
+    if (transaction.status !== TransactionStatus.PENDING) {
+      throw new ConflictException(
+        `Transaction ${transactionId} is already ${transaction.status}, cannot resolve it again`,
+      );
+    }
+    return transaction;
+  }
+
   async lockWalletForUpdate(
     manager: EntityManager,
     walletId: string,
@@ -161,7 +243,7 @@ export class LedgerService {
 
     if (!wallet) throw new NotFoundException(`Wallet ${walletId} not found`);
     if (wallet.status !== WalletStatus.ACTIVE) {
-      throw new InsufficientFundsException(walletId); // reuse 400; a dedicated WalletNotActiveException would be cleaner long-term
+      throw new InsufficientFundsException(walletId);
     }
     return wallet;
   }

@@ -11,6 +11,9 @@ import { LedgerModule } from './ledger/ledger.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { IdempotencyModule } from './idempotency/idempotency.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
+import { RefundsModule } from './refunds/refunds.module';
+import { ReconciliationModule } from './reconciliation/reconciliation.module';
+import { SupportModule } from './support/support.module';
 
 @Module({
   imports: [
@@ -39,6 +42,9 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     LedgerModule,
     IdempotencyModule,
     WebhooksModule,
+    RefundsModule,
+    ReconciliationModule,
+    SupportModule,
   ],
   providers: [
     // Order matters: JwtAuthGuard populates req.user, RolesGuard then reads it.

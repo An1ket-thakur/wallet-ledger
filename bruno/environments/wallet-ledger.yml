@@ -2,4 +2,3 @@ name: wallet-ledger
 variables:
   - secret: true
     name: PAYMENT_WEBHOOK_SECRET
-    description: ""

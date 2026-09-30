@@ -1,0 +1,22 @@
+info:
+  name: support-get-wallethistory
+  type: http
+  seq: 20
+
+http:
+  method: GET
+  url: "{{server}}/support/wallets/:id/history"
+  headers:
+    - name: Authorization
+      value: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiM2M2NWY0NS1iZTMzLTQ2NjctYmVmMC1hYmRkZmM1MTBmZTgiLCJlbWFpbCI6InN1cHBvcnRAZW1haWwuY29tIiwicm9sZSI6IlNVUFBPUlQiLCJ0eXBlIjoiYWNjZXNzIiwiaWF0IjoxNzkwNzc4ODg3LCJleHAiOjE3OTA3Nzk3ODd9.XKghbopXNqfTncencCBaJRBQSctKbePxgZXVrLrT43g
+  params:
+    - name: id
+      value: 2f72063e-0174-4858-8c84-0882298e62b0
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

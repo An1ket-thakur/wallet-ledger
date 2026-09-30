@@ -1,0 +1,27 @@
+info:
+  name: refund
+  type: http
+  seq: 16
+
+http:
+  method: POST
+  url: "{{server}}/refunds"
+  headers:
+    - name: Authorization
+      value: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxZDhlMGU5YS1lYTVjLTRiZmMtODQxZi03Zjg0YmNiNTdhY2UiLCJlbWFpbCI6ImFkbWluQGVtYWlsLmNvbSIsInJvbGUiOiJBRE1JTiIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3OTA3NTA1OTUsImV4cCI6MTc5MDc1MTQ5NX0.gLvI_vkVWULdMpA9GFCxkIFcyq_ZDkwrscpT6SGIPys
+    - name: idempotency-key
+      value: "10101"
+  body:
+    type: json
+    data: |-
+      {
+        "transactionId":"5cb26da7-1928-4646-a7ac-f7d5e353437d",
+        "reason": "testing refund"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

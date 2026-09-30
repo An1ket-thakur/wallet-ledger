@@ -14,8 +14,7 @@ import { type PostgresDataSourceOptions } from 'typeorm/driver/postgres/Postgres
  */
 function schemaOf(q: QueryRunner): string {
   const name =
-    (q.connection.options as PostgresDataSourceOptions).schema ??
-    'nest_wallet_ledger_engine';
+    (q.connection.options as PostgresDataSourceOptions).schema ?? 'public';
   return `"${name.replace(/"/g, '""')}"`;
 }
 

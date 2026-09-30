@@ -6,16 +6,6 @@ info:
 http:
   method: POST
   url: "{{server}}/webhooks/payment-provider"
-  body:
-    type: json
-    data: |-
-      {
-        "eventId": "test-evt-001",
-        "type": "payment.succeeded",
-        "walletId": "2f72063e-0174-4858-8c84-0882298e62b0",
-        "amount": 5000,
-        "currency": "INR"
-      }
   auth: inherit
 
 runtime:
@@ -24,10 +14,10 @@ runtime:
       code: |-
         const CryptoJS = require('crypto-js');
 
-        const secret = bru.getEnvVar('PAYMENT_WEBHOOK_SECRET');
+        const secret = 'change-me-to-a-long-random-webhook-signing-secret';
 
         const bodyString = JSON.stringify({
-          eventId: "test-evt-001",
+          eventId: "test-evt-002",
           type: "payment.succeeded",
           walletId: "2f72063e-0174-4858-8c84-0882298e62b0",
           amount: 5000,

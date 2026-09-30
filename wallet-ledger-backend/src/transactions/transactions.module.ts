@@ -5,6 +5,7 @@ import { LedgerModule } from '../ledger/ledger.module';
 import { TransactionsController } from './transactions.controller';
 import { TransactionsService } from './transactions.service';
 import { IdempotencyModule } from 'src/idempotency/idempotency.module';
+import { MockPayoutProcessorService } from './mock-payout-processor.service';
 
 @Module({
   imports: [
@@ -13,7 +14,7 @@ import { IdempotencyModule } from 'src/idempotency/idempotency.module';
     IdempotencyModule,
   ],
   controllers: [TransactionsController],
-  providers: [TransactionsService],
+  providers: [TransactionsService, MockPayoutProcessorService],
   exports: [TransactionsService],
 })
 export class TransactionsModule {}

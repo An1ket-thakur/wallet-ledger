@@ -1,0 +1,22 @@
+info:
+  name: support-get-user
+  type: http
+  seq: 18
+
+http:
+  method: GET
+  url: "{{server}}/support/users/:id"
+  headers:
+    - name: Authorization
+      value: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiM2M2NWY0NS1iZTMzLTQ2NjctYmVmMC1hYmRkZmM1MTBmZTgiLCJlbWFpbCI6InN1cHBvcnRAZW1haWwuY29tIiwicm9sZSI6IlNVUFBPUlQiLCJ0eXBlIjoiYWNjZXNzIiwiaWF0IjoxNzkwNzc4ODg3LCJleHAiOjE3OTA3Nzk3ODd9.XKghbopXNqfTncencCBaJRBQSctKbePxgZXVrLrT43g
+  params:
+    - name: id
+      value: 0c1b6d37-ad26-409e-afee-e3f4054f5746
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

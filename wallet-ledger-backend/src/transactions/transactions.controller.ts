@@ -7,6 +7,7 @@ import { TransactionsService } from './transactions.service';
 import { DepositDto } from './dto/deposit.dto';
 import { IdempotencyInterceptor } from '../idempotency/idempotency.interceptor';
 import { TransferDto } from './dto/transfer.dto';
+import { WithdrawDto } from './dto/withdraw.dto';
 
 @Controller('transactions')
 export class TransactionsController {
@@ -22,5 +23,11 @@ export class TransactionsController {
   @Post('transfer')
   transfer(@CurrentUser() user: AuthenticatedUser, @Body() dto: TransferDto) {
     return this.transactionsService.transfer(user, dto);
+  }
+
+  @UseInterceptors(IdempotencyInterceptor)
+  @Post('withdraw')
+  withdraw(@CurrentUser() user: AuthenticatedUser, @Body() dto: WithdrawDto) {
+    return this.transactionsService.withdraw(user, dto);
   }
 }

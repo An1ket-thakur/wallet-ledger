@@ -5,12 +5,11 @@ loadEnv();
 
 export const typeOrmConfig: DataSourceOptions = {
   type: 'postgres',
-  database: process.env.DB_NAME,
-  host: process.env.DB_HOST,
-  port: parseInt(process.env.DB_PORT!),
-  password: process.env.DB_PASSWORD,
+  url: process.env.DATABASE_URL,
   schema: process.env.DB_SCHEMA,
-  username: process.env.DB_USER,
+  extra: {
+    options: `-c search_path=${process.env.DB_SCHEMA}`,
+  },
   entities: ['src/database/entities/*.ts'],
   migrations: ['src/database/migrations/*.ts'],
   // Never true outside local prototyping - the ledger tables especially need

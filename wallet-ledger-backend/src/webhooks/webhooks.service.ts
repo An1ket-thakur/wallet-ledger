@@ -11,10 +11,15 @@ import { LedgerService } from '../ledger/ledger.service';
 import { TransactionType } from '../common/types/ledger.enum';
 import { PLATFORM_CASH_SYSTEM_CODE } from '../common/constants/system-wallets';
 import { PaymentWebhookDto } from './dto/payment-webhook.dto';
-import { verifyHmacSignature } from './hmac.util';
+import {
+  buildSignedPayload,
+  isTimestampFresh,
+  verifyHmacSignature,
+} from './hmac.util';
 import { WebhookEvent } from 'src/database/entities/webhook-event.entity';
 
 const PROVIDER = 'mock-payment-provider';
+const TIMESTAMP_TOLERANCE_SECONDS = 300;
 
 @Injectable()
 export class WebhooksService {
@@ -27,14 +32,27 @@ export class WebhooksService {
     @InjectRepository(Wallet) private readonly wallets: Repository<Wallet>,
   ) {}
 
-  verifySignature(rawBody: Buffer, signatureHeader: string | undefined): void {
+  verifySignature(
+    rawBody: Buffer,
+    signatureHeader: string | undefined,
+    timestampHeader: string | undefined,
+  ): void {
     const secret = this.config.get<string>('PAYMENT_WEBHOOK_SECRET');
     if (!secret) {
-      // Fail closed: a missing secret in config is a deploy misconfiguration,
-      // never a reason to accept unverified webhooks.
       throw new UnauthorizedException('Webhook verification is not configured');
     }
-    if (!verifyHmacSignature(rawBody, signatureHeader, secret)) {
+
+    if (!isTimestampFresh(timestampHeader, TIMESTAMP_TOLERANCE_SECONDS)) {
+      throw new UnauthorizedException(
+        'Webhook timestamp is missing, malformed, or outside the allowed window',
+      );
+    }
+
+    const signedPayload = buildSignedPayload(
+      timestampHeader as string,
+      rawBody,
+    );
+    if (!verifyHmacSignature(signedPayload, signatureHeader, secret)) {
       throw new UnauthorizedException('Invalid webhook signature');
     }
   }
@@ -53,17 +71,14 @@ export class WebhooksService {
       where: { provider: PROVIDER, providerEventId: dto.eventId },
     });
     if (existing) {
-      // Already processed (or in flight) - acknowledge with 2xx either way so
-      // the provider stops redelivering. Do NOT reprocess.
       return { status: 'already_processed' };
     }
 
     const userWallet = await this.wallets.findOne({
       where: { id: dto.walletId },
     });
-    if (!userWallet) {
+    if (!userWallet)
       throw new BadRequestException('Unknown wallet in webhook payload');
-    }
     if (userWallet.currency !== dto.currency) {
       throw new BadRequestException(
         'Currency mismatch between webhook payload and wallet',
@@ -100,10 +115,6 @@ export class WebhooksService {
         },
       });
 
-      // Record the event as processed in the SAME transaction as the ledger
-      // write - if either fails, both roll back, so a crash between the two
-      // can't leave a "processed" marker with no matching ledger entry (or
-      // vice versa).
       await manager.getRepository(WebhookEvent).insert({
         provider: PROVIDER,
         providerEventId: dto.eventId,

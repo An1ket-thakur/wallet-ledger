@@ -14,20 +14,30 @@ runtime:
       code: |-
         const CryptoJS = require('crypto-js');
 
-        const secret = 'change-me-to-a-long-random-webhook-signing-secret';
+        const SECRET = 'change-me-to-a-long-random-webhook-signing-secret';
 
-        const bodyString = JSON.stringify({
-          eventId: "test-evt-002",
-          type: "payment.succeeded",
-          walletId: "2f72063e-0174-4858-8c84-0882298e62b0",
+        const timestamp = Math.floor(Date.now() / 1000).toString();
+
+        const payload = {
+          eventId: CryptoJS.lib.WordArray.random(16).toString(),
+          type: 'payment.succeeded',
+          walletId: '2f72063e-0174-4858-8c84-0882298e62b0',
           amount: 5000,
-          currency: "INR"
-        });
+          currency: 'RUB',
+        };
 
-        const signature = CryptoJS.HmacSHA256(bodyString, secret).toString(CryptoJS.enc.Hex);
+        const rawBody = JSON.stringify(payload);
+
+        const signedPayload = `${timestamp}.${rawBody}`;
+
+        const signature = CryptoJS.HmacSHA256(
+          signedPayload,
+          SECRET
+        ).toString(CryptoJS.enc.Hex);
 
         req.setHeader('x-webhook-signature', signature);
-        req.setBody(bodyString);
+        req.setHeader('x-webhook-timestamp', timestamp);
+        req.setBody(rawBody);
 
 settings:
   encodeUrl: true

@@ -18,9 +18,10 @@ export class WebhooksController {
     @Req() req: Request,
     @Body() dto: PaymentWebhookDto,
     @Headers('x-webhook-signature') signature: string | undefined,
+    @Headers('x-webhook-timestamp') timestamp: string | undefined,
   ) {
     // req.rawBody is populated by RawBodyMiddleware, mounted on this route only.
-    this.webhooksService.verifySignature(req.rawBody as Buffer, signature);
+    this.webhooksService.verifySignature(req.rawBody as Buffer, signature, timestamp);
 
     switch (dto.type) {
       case 'payment.succeeded':

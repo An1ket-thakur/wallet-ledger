@@ -14,6 +14,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 import { RefundsModule } from './refunds/refunds.module';
 import { ReconciliationModule } from './reconciliation/reconciliation.module';
 import { SupportModule } from './support/support.module';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
@@ -21,24 +22,18 @@ import { SupportModule } from './support/support.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => {
-        return {
-          type: 'postgres',
-          username: config.get<string>('DB_USER'),
-          password: config.get<string>('DB_PASSWORD'),
-          port: parseInt(config.get<string>('DB_PORT') || '5432'),
-          schema: config.get<string>('DB_SCHEMA'),
-          database: config.get<string>('DB_NAME'),
-          host: config.get<string>('DB_HOST'),
-          extra: {
-            options: `-c search_path=${config.get<string>('DB_SCHEMA')}`,
-          },
-          autoLoadEntities: true,
-          synchronize: false,
-          logging: true,
-        };
-      },
+      useFactory: (config: ConfigService) => ({
+        type: 'postgres',
+        url: config.get<string>('DATABASE_URL'),
+        extra: {
+          options: `-c search_path=${config.get<string>('DB_SCHEMA')}`,
+        },
+        autoLoadEntities: true,
+        synchronize: false,
+        logging: true,
+      }),
     }),
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 100 }]),
     AuthModule,
     UsersModule,
     WalletsModule,
@@ -51,7 +46,9 @@ import { SupportModule } from './support/support.module';
     SupportModule,
   ],
   providers: [
-    // Order matters: JwtAuthGuard populates req.user, RolesGuard then reads it.
+    // Order: Throttler first (reject abusive traffic before it's even
+    // authenticated), then JwtAuthGuard (populates req.user), then RolesGuard.
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
   ],

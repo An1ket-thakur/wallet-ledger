@@ -12,6 +12,7 @@ import {
   TransactionAlreadyReversedException,
   TransactionNotFoundException,
 } from './refunds.error';
+import { AuditService } from 'src/audit/audit.service';
 
 export interface RefundResponse {
   reversalTransactionId: string;
@@ -33,6 +34,7 @@ export class RefundsService {
   constructor(
     private readonly dataSource: DataSource,
     private readonly ledger: LedgerService,
+    private readonly audit: AuditService,
     @InjectRepository(Transaction)
     private readonly transactions: Repository<Transaction>,
     @InjectRepository(LedgerEntry)
@@ -42,6 +44,7 @@ export class RefundsService {
   async reverse(
     admin: AuthenticatedUser,
     dto: CreateRefundDto,
+    ipAddress?: string | null,
   ): Promise<RefundResponse> {
     const original = await this.transactions.findOne({
       where: { id: dto.transactionId },
@@ -106,6 +109,28 @@ export class RefundsService {
         // separately rather than silently blocking the refund.
         skipOverdraftCheckForDebit: true,
       });
+
+      // Written in the SAME transaction as the reversal itself: if the
+      // reversal rolls back for any reason, the audit entry rolls back with
+      // it. An audit log entry for a refund that didn't actually happen
+      // would be worse than no audit log at all.
+      await this.audit.record(
+        {
+          actorUserId: admin.id,
+          actorRole: admin.role,
+          action: 'REFUND_ISSUED',
+          targetType: 'transaction',
+          targetId: original.id,
+          details: {
+            reversalTransactionId: reversalTxn.id,
+            amount: amount.toString(),
+            currency: debitEntry.currency,
+            reason: dto.reason ?? null,
+          },
+          ipAddress,
+        },
+        manager,
+      );
 
       return {
         reversalTransactionId: reversalTxn.id,

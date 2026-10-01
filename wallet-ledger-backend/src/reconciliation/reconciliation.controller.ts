@@ -5,11 +5,18 @@ import {
   Query,
   DefaultValuePipe,
   ParseIntPipe,
+  Req,
 } from '@nestjs/common';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../common/types/roles.enum';
 import { ReconciliationService } from './reconciliation.service';
 import { ReconciliationRun } from 'src/database/entities/reconciliation-run.entity';
+import { AuditService } from 'src/audit/audit.service';
+import {
+  type AuthenticatedUser,
+  CurrentUser,
+} from 'src/common/decorators/current-user.decorator';
+import type { Request } from 'express';
 
 export interface ReconciliationRunResponse {
   id: string;
@@ -45,14 +52,33 @@ function toResponse(run: ReconciliationRun): ReconciliationRunResponse {
 @Roles(UserRole.SUPPORT, UserRole.ADMIN)
 @Controller('reconciliation')
 export class ReconciliationController {
-  constructor(private readonly reconciliation: ReconciliationService) {}
+  constructor(
+    private readonly reconciliation: ReconciliationService,
+    private readonly audit: AuditService,
+  ) {}
 
   // Lets an admin re-run the check on demand (e.g. right after investigating
   // a reported discrepancy) instead of waiting for 2am.
   @Roles(UserRole.ADMIN)
   @Post('run')
-  async run(): Promise<ReconciliationRunResponse> {
-    return toResponse(await this.reconciliation.runCheck('MANUAL'));
+  async run(
+    @CurrentUser() admin: AuthenticatedUser,
+    @Req() req: Request,
+  ): Promise<ReconciliationRunResponse> {
+    const run = await this.reconciliation.runCheck('MANUAL');
+    await this.audit.record({
+      actorUserId: admin.id,
+      actorRole: admin.role,
+      action: 'RECONCILIATION_MANUAL_RUN',
+      targetType: 'reconciliation_run',
+      targetId: run.id,
+      details: {
+        status: run.status,
+        unbalancedTransactionCount: run.unbalancedTransactionCount,
+      },
+      ipAddress: req.ip,
+    });
+    return toResponse(run);
   }
 
   @Get('runs')

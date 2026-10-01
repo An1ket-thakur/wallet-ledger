@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Post, Req, UseInterceptors } from '@nestjs/common';
 import {
   CurrentUser,
   type AuthenticatedUser,
@@ -8,6 +8,7 @@ import { UserRole } from '../common/types/roles.enum';
 import { IdempotencyInterceptor } from '../idempotency/idempotency.interceptor';
 import { RefundsService } from './refunds.service';
 import { CreateRefundDto } from './dto/create-refund.dto';
+import type { Request } from 'express';
 
 @Controller('refunds')
 export class RefundsController {
@@ -21,7 +22,8 @@ export class RefundsController {
   reverse(
     @CurrentUser() admin: AuthenticatedUser,
     @Body() dto: CreateRefundDto,
+    @Req() req: Request,
   ) {
-    return this.refundsService.reverse(admin, dto);
+    return this.refundsService.reverse(admin, dto, req.ip);
   }
 }

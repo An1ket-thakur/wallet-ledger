@@ -6,11 +6,13 @@ import { ReconciliationRun } from 'src/database/entities/reconciliation-run.enti
 import { ReconciliationController } from './reconciliation.controller';
 import { ReconciliationService } from './reconciliation.service';
 import { ReconciliationCron } from './reconciliation.cron';
+import { AuditModule } from 'src/audit/audit.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([ReconciliationRun, LedgerEntry]),
     ScheduleModule.forRoot(), // safe to call once here even if imported elsewhere; Nest dedupes
+    AuditModule,
   ],
   controllers: [ReconciliationController],
   providers: [ReconciliationService, ReconciliationCron],

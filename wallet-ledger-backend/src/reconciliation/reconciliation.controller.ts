@@ -9,6 +9,36 @@ import {
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../common/types/roles.enum';
 import { ReconciliationService } from './reconciliation.service';
+import { ReconciliationRun } from 'src/database/entities/reconciliation-run.entity';
+
+export interface ReconciliationRunResponse {
+  id: string;
+  status: string;
+  totalDebits: string;
+  totalCredits: string;
+  unbalancedTransactionCount: number;
+  details: Record<string, unknown> | null;
+  triggeredBy: string;
+  durationMs: number;
+  createdAt: Date;
+}
+
+// BigInt fields (totalDebits/totalCredits) can't be JSON-serialized directly -
+// Nest's default serializer throws "Do not know how to serialize a BigInt".
+// Always convert through this before returning an entity from a controller.
+function toResponse(run: ReconciliationRun): ReconciliationRunResponse {
+  return {
+    id: run.id,
+    status: run.status,
+    totalDebits: run.totalDebits.toString(),
+    totalCredits: run.totalCredits.toString(),
+    unbalancedTransactionCount: run.unbalancedTransactionCount,
+    details: run.details,
+    triggeredBy: run.triggeredBy,
+    durationMs: run.durationMs,
+    createdAt: run.createdAt,
+  };
+}
 
 // Support/Admin only - this exposes internal ledger-health data, not
 // something a customer has any reason to see.
@@ -21,14 +51,15 @@ export class ReconciliationController {
   // a reported discrepancy) instead of waiting for 2am.
   @Roles(UserRole.ADMIN)
   @Post('run')
-  run() {
-    return this.reconciliation.runCheck('MANUAL');
+  async run(): Promise<ReconciliationRunResponse> {
+    return toResponse(await this.reconciliation.runCheck('MANUAL'));
   }
 
   @Get('runs')
-  listRuns(
+  async listRuns(
     @Query('limit', new DefaultValuePipe(30), ParseIntPipe) limit: number,
-  ) {
-    return this.reconciliation.listRuns(limit);
+  ): Promise<ReconciliationRunResponse[]> {
+    const runs = await this.reconciliation.listRuns(limit);
+    return runs.map(toResponse);
   }
 }

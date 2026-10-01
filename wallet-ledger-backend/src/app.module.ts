@@ -30,8 +30,12 @@ import { SupportModule } from './support/support.module';
           schema: config.get<string>('DB_SCHEMA'),
           database: config.get<string>('DB_NAME'),
           host: config.get<string>('DB_HOST'),
+          extra: {
+            options: `-c search_path=${config.get<string>('DB_SCHEMA')}`,
+          },
           autoLoadEntities: true,
           synchronize: false,
+          logging: true,
         };
       },
     }),

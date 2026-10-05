@@ -57,13 +57,6 @@ export class WebhooksService {
     }
   }
 
-  /**
-   * Handles payment.succeeded: credits the target wallet from platform cash,
-   * same shape as a manual deposit. Dedup is by (provider, providerEventId) -
-   * webhook providers redeliver on any non-2xx response or timeout, so this
-   * MUST be idempotent independent of the Idempotency-Key mechanism (there's
-   * no client header here, the provider doesn't send one).
-   */
   async handlePaymentSucceeded(
     dto: PaymentWebhookDto,
   ): Promise<{ status: string; transactionId?: string }> {

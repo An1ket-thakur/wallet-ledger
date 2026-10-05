@@ -6,7 +6,6 @@ import { Transaction } from '../database/entities/transaction.entity';
 import { Wallet } from 'src/database/entities/wallet.entity';
 
 @Module({
-  // Registering both here so autoLoadEntities picks them up.
   imports: [TypeOrmModule.forFeature([LedgerEntry, Transaction, Wallet])],
   providers: [LedgerService],
   exports: [LedgerService],

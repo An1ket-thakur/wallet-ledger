@@ -28,11 +28,6 @@ export interface PostDoubleEntryInput {
   initiatedBy?: string | null;
   metadata?: Record<string, unknown> | null;
   skipOverdraftCheckForDebit?: boolean;
-  /**
-   * If provided, posts entries against an EXISTING PENDING transaction
-   * (created via createPendingTransaction) instead of creating a new one.
-   * Used for the two-phase PENDING -> POSTED flow (e.g. async withdrawals).
-   */
   existingTransactionId?: string;
 }
 
@@ -42,18 +37,6 @@ export interface CreatePendingTransactionInput {
   metadata?: Record<string, unknown> | null;
 }
 
-/**
- * The ONLY place that writes to ledger_entries / transactions.
- *
- * Two paths through this service:
- *  - Synchronous (deposit, transfer, refund): call postDoubleEntry() directly.
- *    It creates the Transaction as POSTED and writes both entries in one go.
- *  - Asynchronous (e.g. withdrawal to an external processor): call
- *    createPendingTransaction() first, do the external call, then EITHER
- *    postDoubleEntry({ existingTransactionId }) on success OR
- *    markTransactionFailed() on failure. A PENDING transaction never has
- *    ledger entries; a FAILED one never gets any either.
- */
 @Injectable()
 export class LedgerService {
   constructor(private readonly dataSource: DataSource) {}
@@ -75,13 +58,6 @@ export class LedgerService {
     return BigInt(raw?.balance ?? '0');
   }
 
-  /**
-   * Phase 1 of an async flow: record intent before anything external happens.
-   * No ledger entries yet - the transaction exists purely as an audit trail
-   * of "this was attempted", so if the process crashes right after this call
-   * and before the external processor responds, you still have a PENDING
-   * record to reconcile/investigate rather than nothing at all.
-   */
   async createPendingTransaction(
     manager: EntityManager,
     input: CreatePendingTransactionInput,
@@ -96,12 +72,6 @@ export class LedgerService {
     );
   }
 
-  /**
-   * Phase 2a (success): posts the balanced entries and flips PENDING -> POSTED.
-   * Also used directly (without a prior createPendingTransaction call) for
-   * synchronous flows, where existingTransactionId is omitted and a fresh
-   * POSTED transaction is created in one step.
-   */
   async postDoubleEntry(
     manager: EntityManager,
     input: PostDoubleEntryInput,
@@ -181,12 +151,6 @@ export class LedgerService {
     return transaction;
   }
 
-  /**
-   * Phase 2b (failure): marks a PENDING transaction as FAILED. NEVER writes
-   * ledger entries - a failed transaction, by definition, moved no money, so
-   * the books must show nothing happened. The row survives only as an audit
-   * trail of "this was attempted and did not go through", plus the reason.
-   */
   async markTransactionFailed(
     manager: EntityManager,
     transactionId: string,
@@ -203,12 +167,6 @@ export class LedgerService {
     return manager.getRepository(Transaction).save(transaction);
   }
 
-  /**
-   * Loads a transaction and asserts it's still PENDING before letting a
-   * caller resolve it either way. Prevents resolving the same transaction
-   * twice (e.g. a duplicate webhook callback trying to both post AND fail
-   * the same withdrawal).
-   */
   private async claimPendingTransaction(
     manager: EntityManager,
     transactionId: string,

@@ -25,7 +25,6 @@ export class TransferDto {
   @Validate(WalletsDifferConstraint)
   toWalletId!: string;
 
-  /** Minor units (cents). e.g. 1000 = $10.00. */
   @IsInt()
   @IsPositive()
   amount!: number;

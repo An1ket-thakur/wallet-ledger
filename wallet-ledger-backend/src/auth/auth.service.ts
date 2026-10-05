@@ -18,11 +18,9 @@ import { StringValue } from 'ms';
 
 const REFRESH_TOKEN_TTL_DAYS = 30;
 
-// argon2id params: tuned conservatively for a portfolio project running on modest hardware.
-// Bump memoryCost if deploying on a box with more RAM to spare.
 const ARGON2_OPTIONS: argon2.HashOptions = {
   type: argon2.argon2id,
-  memoryCost: 19456, // ~19 MB
+  memoryCost: 19456,
   timeCost: 2,
   parallelism: 1,
 };
@@ -50,8 +48,6 @@ export class AuthService {
         email: dto.email,
         fullName: dto.fullName,
         passwordHash,
-        // Ignore any client-supplied role above CUSTOMER. Admin/Support are
-        // provisioned out-of-band (seed script / internal endpoint), never via public signup.
         role: UserRole.CUSTOMER,
       }),
     );
@@ -77,10 +73,6 @@ export class AuthService {
     return this.issueTokenPair(user.id, user.email, user.role);
   }
 
-  /**
-   * Called from RefreshStrategy once the presented refresh token has already
-   * been validated. Rotates: revokes the old token record, issues a fresh pair.
-   */
   async rotateRefreshToken(
     userId: string,
     oldTokenId: string,
@@ -120,8 +112,6 @@ export class AuthService {
       },
     );
 
-    // Opaque refresh token = `${tokenId}.${secret}`. Only the argon2 hash of `secret`
-    // is persisted, keyed by tokenId, so a DB read alone can't produce a usable token.
     const tokenId = randomUUID();
     const secret = randomBytes(32).toString('hex');
     const tokenHash = await argon2.hash(secret, ARGON2_OPTIONS);

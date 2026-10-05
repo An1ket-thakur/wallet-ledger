@@ -20,13 +20,6 @@ export class AuditService {
     private readonly actions: Repository<AdminAction>,
   ) {}
 
-  /**
-   * Accepts an optional EntityManager so the audit row can be written inside
-   * the SAME database transaction as the action it's recording (e.g. a
-   * refund) - if the refund rolls back, so does its own audit entry, and you
-   * never end up with an audit log claiming something happened that the
-   * ledger says didn't.
-   */
   async record(
     input: RecordActionInput,
     manager?: EntityManager,

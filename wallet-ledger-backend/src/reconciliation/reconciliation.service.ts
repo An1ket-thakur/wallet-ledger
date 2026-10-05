@@ -26,25 +26,6 @@ export class ReconciliationService {
     private readonly runs: Repository<ReconciliationRun>,
   ) {}
 
-  /**
-   * Two independent checks, run as plain read queries (no locks - reconciliation
-   * must never block live traffic):
-   *
-   * 1. GLOBAL: SUM(all debits) must equal SUM(all credits) across the entire
-   *    ledger. This is the headline "books balance" assertion.
-   * 2. PER-TRANSACTION: every individual transaction's debits must equal its
-   *    own credits. The DEFERRED constraint trigger in the schema already
-   *    enforces this at commit time for any write going through the app -
-   *    this check exists as defense-in-depth against a direct DB write that
-   *    bypassed the app/ORM (a manual UPDATE by someone with prod DB access,
-   *    a bad manual migration, etc). If this ever finds something, the
-   *    trigger was circumvented, not just a bug in the app layer.
-   *
-   * Both checks read directly from ledger_entries rather than the
-   * wallet_balances view, since the view derives from the same table this is
-   * meant to double-check - reading the view here would just check the view
-   * agrees with itself.
-   */
   async runCheck(triggeredBy: 'CRON' | 'MANUAL'): Promise<ReconciliationRun> {
     const startedAt = Date.now();
 
@@ -82,8 +63,6 @@ export class ReconciliationService {
           : ReconciliationStatus.DISCREPANCY;
 
       if (status === ReconciliationStatus.DISCREPANCY) {
-        // Loud on purpose - this should page someone in a real deployment,
-        // not just sit quietly in a table.
         this.logger.error(
           `Reconciliation DISCREPANCY: totalDebits=${totalDebits} totalCredits=${totalCredits} ` +
             `unbalancedTransactions=${unbalanced.length}`,

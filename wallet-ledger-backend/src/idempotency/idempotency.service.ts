@@ -33,15 +33,6 @@ export class IdempotencyService {
       .digest('hex');
   }
 
-  /**
-   * Atomically claims a key for this (user, key) pair.
-   *  - No row yet -> insert a PENDING row, caller should proceed with the handler.
-   *  - Row exists, COMPLETED, same request hash -> return the stored response (replay).
-   *  - Row exists, COMPLETED, different request hash -> 409, key reuse is a client bug.
-   *  - Row exists, PENDING -> a concurrent duplicate request is mid-flight -> 409.
-   * The INSERT unique-violation path is what makes the PENDING claim atomic
-   * under real concurrency (two requests racing to insert the same key).
-   */
   async checkAndClaim(
     userId: string,
     key: string,
@@ -94,11 +85,6 @@ export class IdempotencyService {
     );
   }
 
-  /**
-   * On handler failure we DELETE the PENDING row rather than leave it stuck,
-   * so the client can safely retry the same key after fixing whatever caused
-   * the failure (e.g. insufficient funds, a transient DB error).
-   */
   async releaseOnFailure(recordId: string): Promise<void> {
     await this.records.delete({ id: recordId });
   }

@@ -1,17 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 import { type PostgresDataSourceOptions } from 'typeorm/driver/postgres/PostgresDataSourceOptions';
 
-/**
- * Hand-written on purpose: the CHECK constraints, composite FK, triggers and
- * view below are the actual correctness guarantees and TypeORM can't generate them.
- * Assumes the `users` table already exists in the same schema.
- *
- * Every object is schema-qualified using the schema from the DataSource
- * options (DB_SCHEMA), so nothing depends on search_path.
- *
- * Enum type names match the `enumName` values in the entities:
- *   wallet_status, transaction_type, transaction_status, ledger_direction
- */
 function schemaOf(q: QueryRunner): string {
   const name =
     (q.connection.options as PostgresDataSourceOptions).schema ?? 'public';

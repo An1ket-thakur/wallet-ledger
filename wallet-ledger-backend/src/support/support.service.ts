@@ -7,12 +7,6 @@ import { LedgerEntry } from '../database/entities/ledger-entry.entity';
 import { LedgerService } from '../ledger/ledger.service';
 import { User } from '../database/entities/users.entity';
 
-/**
- * Everything here is READ-ONLY by design. Support agents investigate; they
- * never mutate the ledger directly - any correction still has to go through
- * RefundsService (Admin-only, POST /refunds) so it's always a proper,
- * auditable reversing entry rather than a support agent editing state.
- */
 @Injectable()
 export class SupportService {
   constructor(
@@ -42,7 +36,7 @@ export class SupportService {
   }
 
   async listWalletsForUser(userId: string) {
-    await this.findUser(userId); // 404 early if the user itself doesn't exist
+    await this.findUser(userId);
     const wallets = await this.wallets.find({
       where: { userId },
       order: { createdAt: 'ASC' },
@@ -59,10 +53,6 @@ export class SupportService {
     );
   }
 
-  /**
-   * Full transaction history touching a wallet, either side (debit or credit),
-   * newest first. This is the main "what happened to this user's money" view.
-   */
   async getWalletHistory(walletId: string, limit: number) {
     const wallet = await this.wallets.findOne({ where: { id: walletId } });
     if (!wallet) throw new NotFoundException(`Wallet ${walletId} not found`);
@@ -99,11 +89,6 @@ export class SupportService {
     };
   }
 
-  /**
-   * Full detail on one transaction: both ledger entries side by side, plus
-   * whether it's been reversed and what (if anything) it itself reverses.
-   * This is the drill-down view for a single disputed transaction.
-   */
   async getTransactionDetail(transactionId: string) {
     const transaction = await this.transactions.findOne({
       where: { id: transactionId },

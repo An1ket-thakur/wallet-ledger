@@ -15,8 +15,6 @@ import { WalletsService } from './wallet.service';
 import { CreateWalletDto } from './dto/create-wallet.dto';
 import { IdempotencyInterceptor } from 'src/idempotency/idempotency.interceptor';
 
-// All routes require a valid access token (global JwtAuthGuard).
-// Ownership/role checks live in WalletsService.findAccessible().
 @Controller('wallets')
 export class WalletsController {
   constructor(private readonly walletsService: WalletsService) {}

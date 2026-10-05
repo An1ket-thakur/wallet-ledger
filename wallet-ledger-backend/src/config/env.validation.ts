@@ -16,12 +16,6 @@ enum NodeEnv {
   PRODUCTION = 'production',
 }
 
-/**
- * Every required env var in one place. If any of these are missing or
- * malformed, the app refuses to start - "it crashed at boot with a clear
- * message" is always better for a financial system than "it started fine
- * and quietly ran with an undefined JWT secret / no webhook verification".
- */
 class EnvironmentVariables {
   @IsEnum(NodeEnv)
   NODE_ENV: NodeEnv = NodeEnv.DEVELOPMENT;
@@ -39,8 +33,6 @@ class EnvironmentVariables {
   @IsNotEmpty()
   DB_SCHEMA!: string;
 
-  // Must be long enough that it isn't practically brute-forceable; 32 chars
-  // is a floor, not a target - generate with `openssl rand -hex 32` (64 chars).
   @IsString()
   @MinLength(32, {
     message: 'JWT_ACCESS_SECRET must be at least 32 characters',
@@ -57,9 +49,6 @@ class EnvironmentVariables {
   })
   PAYMENT_WEBHOOK_SECRET!: string;
 
-  // Allowed to be empty in local dev (no browser origin can call the API),
-  // but must at least be present as a key so the omission is a deliberate
-  // choice, not an accident - see the startup warning in main.ts.
   @IsString()
   CORS_ORIGINS: string = '';
 }

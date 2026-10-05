@@ -31,8 +31,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException('Invalid token type');
     }
 
-    // Re-check the user still exists / isn't disabled on every request.
-    // Slight DB cost, but prevents a revoked/disabled user from acting on a still-valid token.
     const user = await this.users.findOne({ where: { id: payload.sub } });
     if (!user || user.disabledAt) {
       throw new UnauthorizedException('Account no longer active');

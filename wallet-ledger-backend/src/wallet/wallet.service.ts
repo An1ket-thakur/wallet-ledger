@@ -20,7 +20,6 @@ export interface WalletBalanceResponse {
   walletId: string;
   currency: string;
   label: string;
-  /** Minor units (cents) as a string - BigInt can't be JSON-serialized. */
   balance: string;
 }
 
@@ -76,11 +75,6 @@ export class WalletsService {
     };
   }
 
-  /**
-   * Customers can only see their own wallets; Support/Admin can see any.
-   * A customer asking for someone else's wallet gets 404, not 403, so wallet
-   * ids can't be probed for existence.
-   */
   private async findAccessible(
     user: AuthenticatedUser,
     walletId: string,

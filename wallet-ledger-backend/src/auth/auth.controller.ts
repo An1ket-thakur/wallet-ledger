@@ -39,8 +39,6 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
-  // Uses the 'jwt-refresh' strategy directly (bypasses the global JwtAuthGuard,
-  // since this endpoint's whole purpose is to accept an *expired-access-token* caller).
   @Public()
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @UseGuards(AuthGuard('jwt-refresh'))

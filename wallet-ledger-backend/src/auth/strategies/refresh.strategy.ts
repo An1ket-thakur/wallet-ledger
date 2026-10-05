@@ -8,13 +8,6 @@ import type { Request } from 'express';
 import { User } from 'src/database/entities/users.entity';
 import { RefreshToken } from 'src/database/entities/refresh-token.entity';
 
-/**
- * Refresh tokens are opaque random strings (not JWTs). We store only an
- * argon2 hash of each token server-side, keyed by user + a tokenId, so:
- *   - a leaked DB dump doesn't hand out usable refresh tokens
- *   - individual tokens (sessions/devices) can be revoked without a blocklist
- *   - rotation is enforced: presenting a used/rotated token revokes the whole chain
- */
 @Injectable()
 export class RefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
   constructor(
@@ -40,8 +33,6 @@ export class RefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
 
     const matches = await argon2.verify(record.tokenHash, secret);
     if (!matches) {
-      // Reuse of an already-rotated/invalid secret against a live id is a strong signal
-      // of a stolen token. Revoke the whole family defensively.
       await this.refreshTokens.update(
         { userId: record.userId, revokedAt: IsNull() },
         { revokedAt: new Date() },

@@ -30,9 +30,6 @@ export interface ReconciliationRunResponse {
   createdAt: Date;
 }
 
-// BigInt fields (totalDebits/totalCredits) can't be JSON-serialized directly -
-// Nest's default serializer throws "Do not know how to serialize a BigInt".
-// Always convert through this before returning an entity from a controller.
 function toResponse(run: ReconciliationRun): ReconciliationRunResponse {
   return {
     id: run.id,
@@ -47,8 +44,6 @@ function toResponse(run: ReconciliationRun): ReconciliationRunResponse {
   };
 }
 
-// Support/Admin only - this exposes internal ledger-health data, not
-// something a customer has any reason to see.
 @Roles(UserRole.SUPPORT, UserRole.ADMIN)
 @Controller('reconciliation')
 export class ReconciliationController {
@@ -57,8 +52,6 @@ export class ReconciliationController {
     private readonly audit: AuditService,
   ) {}
 
-  // Lets an admin re-run the check on demand (e.g. right after investigating
-  // a reported discrepancy) instead of waiting for 2am.
   @Roles(UserRole.ADMIN)
   @Post('run')
   async run(

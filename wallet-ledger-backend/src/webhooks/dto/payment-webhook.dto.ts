@@ -10,7 +10,6 @@ export class PaymentWebhookDto {
   @IsUUID()
   walletId!: string;
 
-  /** Minor units (cents). */
   @IsInt()
   @IsPositive()
   amount!: number;

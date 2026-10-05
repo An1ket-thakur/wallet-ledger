@@ -13,14 +13,6 @@ import { IdempotencyService } from './idempotency.service';
 const HEADER = 'idempotency-key';
 const MAX_KEY_LENGTH = 255;
 
-/**
- * Apply to any mutating (POST/PATCH/PUT) route that moves money or creates a
- * resource the client might retry blind (network timeout, etc).
- * Usage: @UseInterceptors(IdempotencyInterceptor)
- *
- * Requires the route to already be behind JwtAuthGuard, since it keys off
- * req.user.id - it does not itself check authentication.
- */
 @Injectable()
 export class IdempotencyInterceptor implements NestInterceptor {
   constructor(private readonly idempotency: IdempotencyService) {}
@@ -56,8 +48,6 @@ export class IdempotencyInterceptor implements NestInterceptor {
           return from([result.body]);
         }
 
-        // outcome === 'proceed': run the real handler, then persist its result
-        // against the claimed record so a retry of this exact key replays it.
         return next.handle().pipe(
           switchMap((body) =>
             from(

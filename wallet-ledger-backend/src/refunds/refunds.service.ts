@@ -23,12 +23,6 @@ export interface RefundResponse {
   reversedCreditWalletId: string;
 }
 
-/**
- * Admin-only. A refund/reversal NEVER edits or deletes the original
- * transaction or its ledger entries - it POSTS A NEW transaction that moves
- * the same amount back the other way, permanently linked via
- * reverses_transaction_id. History is never rewritten, only appended to.
- */
 @Injectable()
 export class RefundsService {
   constructor(
@@ -55,8 +49,6 @@ export class RefundsService {
       throw new CannotReverseAReversalException();
     }
 
-    // Belt-and-suspenders check ahead of the DB's own UNIQUE(reverses_transaction_id) -
-    // gives a clean 409 with context instead of a raw constraint-violation error.
     const alreadyReversed = await this.transactions.findOne({
       where: { reversesTransactionId: original.id },
     });
@@ -73,16 +65,12 @@ export class RefundsService {
       (e) => e.direction === LedgerDirection.CREDIT,
     );
     if (!debitEntry || !creditEntry) {
-      // Shouldn't be reachable given the balanced-transaction DB trigger, but
-      // fail loudly rather than silently reversing a malformed transaction.
       throw new TransactionNotFoundException(original.id);
     }
 
-    // Reversal flips direction: whoever received the original CREDIT now
-    // gets DEBITed, and whoever was DEBITed originally gets CREDITed back.
     const reversalDebitWalletId = creditEntry.walletId;
     const reversalCreditWalletId = debitEntry.walletId;
-    const amount = debitEntry.amount; // == creditEntry.amount, enforced by the balanced-transaction trigger
+    const amount = debitEntry.amount;
 
     return this.dataSource.transaction(async (manager) => {
       const [firstId, secondId] = [
@@ -101,19 +89,9 @@ export class RefundsService {
         reversesTransactionId: original.id,
         initiatedBy: admin.id,
         metadata: dto.reason ? { reason: dto.reason } : null,
-        // A refund is an administrative correction, not a normal spend - it
-        // must go through even if the wallet being debited (the original
-        // recipient) has since spent the funds and would go negative. That
-        // negative balance is now a real, visible debt owed back to the
-        // platform, not a bug; a production system would flag/collect on it
-        // separately rather than silently blocking the refund.
         skipOverdraftCheckForDebit: true,
       });
 
-      // Written in the SAME transaction as the reversal itself: if the
-      // reversal rolls back for any reason, the audit entry rolls back with
-      // it. An audit log entry for a refund that didn't actually happen
-      // would be worse than no audit log at all.
       await this.audit.record(
         {
           actorUserId: admin.id,

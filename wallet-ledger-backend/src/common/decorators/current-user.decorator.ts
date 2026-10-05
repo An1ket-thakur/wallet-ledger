@@ -6,10 +6,6 @@ export interface AuthenticatedUser {
   role: string;
 }
 
-/**
- * Pulls the authenticated user off the request, set by JwtStrategy.validate().
- * Usage: findWallets(@CurrentUser() user: AuthenticatedUser)
- */
 export const CurrentUser = createParamDecorator(
   (data: keyof AuthenticatedUser | undefined, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();

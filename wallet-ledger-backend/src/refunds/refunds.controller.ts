@@ -14,8 +14,6 @@ import type { Request } from 'express';
 export class RefundsController {
   constructor(private readonly refundsService: RefundsService) {}
 
-  // Admin-only: refunds/reversals are a privileged correction path, not
-  // something a customer or support agent can trigger directly.
   @Roles(UserRole.ADMIN)
   @UseInterceptors(IdempotencyInterceptor)
   @Post()

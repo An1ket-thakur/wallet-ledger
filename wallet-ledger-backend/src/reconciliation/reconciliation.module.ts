@@ -11,7 +11,7 @@ import { AuditModule } from 'src/audit/audit.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([ReconciliationRun, LedgerEntry]),
-    ScheduleModule.forRoot(), // safe to call once here even if imported elsewhere; Nest dedupes
+    ScheduleModule.forRoot(),
     AuditModule,
   ],
   controllers: [ReconciliationController],

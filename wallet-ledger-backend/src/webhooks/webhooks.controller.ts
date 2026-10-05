@@ -4,10 +4,6 @@ import { Public } from '../common/decorators/public.decorator';
 import { WebhooksService } from './webhooks.service';
 import { PaymentWebhookDto } from './dto/payment-webhook.dto';
 
-/**
- * @Public(): webhooks are authenticated by HMAC signature, not a user's JWT -
- * the provider calling this endpoint has no Claude/user session at all.
- */
 @Controller('webhooks')
 export class WebhooksController {
   constructor(private readonly webhooksService: WebhooksService) {}
@@ -20,8 +16,11 @@ export class WebhooksController {
     @Headers('x-webhook-signature') signature: string | undefined,
     @Headers('x-webhook-timestamp') timestamp: string | undefined,
   ) {
-    // req.rawBody is populated by RawBodyMiddleware, mounted on this route only.
-    this.webhooksService.verifySignature(req.rawBody as Buffer, signature, timestamp);
+    this.webhooksService.verifySignature(
+      req.rawBody as Buffer,
+      signature,
+      timestamp,
+    );
 
     switch (dto.type) {
       case 'payment.succeeded':

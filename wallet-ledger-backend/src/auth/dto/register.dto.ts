@@ -18,8 +18,6 @@ export class RegisterDto {
   @IsString()
   fullName!: string;
 
-  // In production this should never be client-settable for anything above CUSTOMER;
-  // enforce that in the service, not just the DTO.
   @IsOptional()
   @IsEnum(UserRole)
   role?: UserRole;

@@ -16,7 +16,7 @@ export class Migration1790400000000 implements MigrationInterface {
       `CREATE TYPE ${S}."user_role" AS ENUM('CUSTOMER', 'SUPPORT', 'ADMIN')`,
     );
     await queryRunner.query(
-      `CREATE TABLE ${S}."users" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "email" text NOT NULL, "password_hash" text NOT NULL, "full_name" text NOT NULL, "role" ${S}."user_role" NOT NULL DEFAULT 'CUSTOMER', "disabled_at" TIMESTAMP WITH TIME ZONE, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_a3ffb1c0c8416b9fc6f907b7433" PRIMARY KEY ("id"))`,
+      `CREATE TABLE ${S}."users" ("id" uuid NOT NULL DEFAULT gen_random_uuid(), "email" text NOT NULL, "password_hash" text NOT NULL, "full_name" text NOT NULL, "role" ${S}."user_role" NOT NULL DEFAULT 'CUSTOMER', "disabled_at" TIMESTAMP WITH TIME ZONE, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_a3ffb1c0c8416b9fc6f907b7433" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
       `CREATE UNIQUE INDEX "IDX_97672ac88f789774dd47f7c8be" ON ${S}."users"  ("email") `,

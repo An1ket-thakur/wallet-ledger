@@ -1,7 +1,10 @@
 import { DataSource, type DataSourceOptions } from 'typeorm';
 import { config as loadEnv } from 'dotenv';
 
-loadEnv({ path: process.env.NODE_ENV === 'test' ? '.env.test' : '.env' });
+loadEnv({
+  path: process.env.NODE_ENV === 'test' ? '.env.test' : '.env',
+  quiet: true,
+});
 
 export const typeOrmConfig: DataSourceOptions = {
   type: 'postgres',

@@ -6,5 +6,4 @@ module.exports = {
     '^.+\\.(t|j)s$': 'ts-jest',
   },
   testEnvironment: 'node',
-  setupFiles: ['<rootDir>/test/setup.ts'],
 };

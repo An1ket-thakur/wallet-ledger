@@ -18,19 +18,23 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: process.env.NODE_ENV === 'test' ? '.env.test' : '.env',
+    }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
+        schema: config.get<string>('DB_SCHEMA'),
         extra: {
           options: `-c search_path=${config.get<string>('DB_SCHEMA')}`,
         },
         autoLoadEntities: true,
         synchronize: false,
-        logging: true,
+        logging: config.get<string>('NODE_ENV') === 'development',
       }),
     }),
     ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 100 }]),

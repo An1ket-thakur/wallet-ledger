@@ -6,6 +6,9 @@ import { Test } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../../src/app.module';
+import { DataSource } from 'typeorm';
+import { User } from '../../src/database/entities/users.entity';
+import { UserRole } from '../../src/common/types/roles.enum';
 
 /**
  * Boots the FULL app (all modules, all guards, real TypeORM connection)
@@ -51,11 +54,13 @@ function uniqueEmail(): string {
   return `test.user.${Date.now()}.${counter}@example.com`;
 }
 
+export const TEST_PASSWORD = 'a-strong-password-123';
+
 export async function registerUser(app: INestApplication): Promise<TestUser> {
   const email = uniqueEmail();
   const res = await request(app.getHttpServer())
     .post('/api/v1/auth/register')
-    .send({ email, password: 'a-strong-password-123', fullName: 'Test User' })
+    .send({ email, password: TEST_PASSWORD, fullName: 'Test User' })
     .expect(201);
 
   return {
@@ -87,7 +92,7 @@ export async function createWallet(
   return res.body.id;
 }
 
-export async function deposit(
+export function deposit(
   app: INestApplication,
   accessToken: string,
   walletId: string,
@@ -112,4 +117,25 @@ export async function getBalance(
     .expect(200);
 
   return BigInt(res.body.balance);
+}
+
+export async function promoteToAdmin(
+  app: INestApplication,
+  user: TestUser,
+): Promise<TestUser> {
+  const dataSource = app.get(DataSource);
+  await dataSource.getRepository(User).update(user.userId, {
+    role: UserRole.ADMIN,
+  });
+
+  const res = await request(app.getHttpServer())
+    .post('/api/v1/auth/login')
+    .send({ email: user.email, password: TEST_PASSWORD })
+    .expect(200);
+
+  return {
+    accessToken: res.body.accessToken,
+    userId: user.userId,
+    email: user.email,
+  };
 }

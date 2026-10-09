@@ -13,7 +13,7 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "test": "npm run test:migrate && jest --config jest.config.js",
+    "test": "jest --config jest.config.js",
     "test:watch": "jest --config jest.config.js --watch",
     "test:e2e": "npm run test:migrate && jest --config test/jest-e2e.json",
     "test:migrate": "cross-env NODE_ENV=test npm run typeorm -- migration:run",
@@ -32,7 +32,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/schedule": "^12.0.2",
     "@nestjs/throttler": "^6.7.1",
-    "@nestjs/typeorm": "^12.0.1",
+    "@nestjs/typeorm": "^11.0.3",
     "argon2": "^0.45.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
@@ -46,7 +46,7 @@
     "raw-body": "^4.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "typeorm": "^1.1.1"
+    "typeorm": "^0.3.20"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -61,7 +61,6 @@
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^7.0.0",
     "cross-env": "^10.1.0",
-    "dotenv-cli": "^11.0.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",

@@ -1,9 +1,9 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
-import { type PostgresDataSourceOptions } from 'typeorm/driver/postgres/PostgresDataSourceOptions';
+import { type PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 
 function schemaOf(q: QueryRunner): string {
   const name =
-    (q.connection.options as PostgresDataSourceOptions).schema ?? 'public';
+    (q.connection.options as PostgresConnectionOptions).schema ?? 'public';
   return `"${name.replace(/"/g, '""')}"`;
 }
 

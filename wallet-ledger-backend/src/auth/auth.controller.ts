@@ -20,19 +20,24 @@ import {
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { Throttle } from '@nestjs/throttler';
 
+const AUTH_THROTTLE =
+  process.env.NODE_ENV === 'test'
+    ? { default: { limit: 1000, ttl: 60_000 } }
+    : { default: { limit: 5, ttl: 60_000 } };
+
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Public()
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle(AUTH_THROTTLE)
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
 
   @Public()
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle(AUTH_THROTTLE)
   @Post('login')
   @HttpCode(HttpStatus.OK)
   login(@Body() dto: LoginDto) {

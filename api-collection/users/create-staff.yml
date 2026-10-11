@@ -1,0 +1,39 @@
+info:
+  name: create-staff
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{server}}/users/staff"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "email": "support@email.com",
+        "password": "1234567890",
+        "fullName": "Support",
+        "role": "SUPPORT"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("creates admin or support user", function() {
+           expect(res.status).to.equal(201);
+           expect(res.body).to.have.property('id');
+           expect(res.body).to.have.property('fullName');
+           expect(res.body).to.have.property('email');
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

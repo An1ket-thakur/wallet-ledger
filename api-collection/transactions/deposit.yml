@@ -1,0 +1,41 @@
+info:
+  name: deposit
+  type: http
+  seq: 13
+
+http:
+  method: POST
+  url: "{{server}}/transactions/deposit"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+    - name: idempotency-key
+      value: "{{$randomUUID}}"
+  body:
+    type: json
+    data: |-
+      {
+        "walletId": "0bfb8242-a213-4fba-9f89-010a330863e1",
+        "amount": 4000
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("deposits money in user's wallet", function() {
+           expect(res.status).to.equal(201);
+           expect(res.body).to.have.property('transactionId');
+           expect(res.body).to.have.property('type');
+           expect(res.body).to.have.property('walletId');
+           expect(res.body).to.have.property('currency');
+           expect(res.body).to.have.property('balanceAfter');
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

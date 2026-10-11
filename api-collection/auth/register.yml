@@ -1,0 +1,40 @@
+info:
+  name: register
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{server}}/auth/register"
+  body:
+    type: json
+    data: |-
+      {
+        "email":"customer-{{$randomUUID}}@email.com",
+        "password":"1234567890",
+        "fullName":"Test Customer"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 201) {
+          bru.setVar("accessToken", res.body.session.accessToken);
+          bru.setVar("refreshToken", res.body.session.refreshToken);
+        }
+    - type: tests
+      code: |-
+        test("registers a new customer and returns a session", function() {
+              expect(res.status).to.equal(201);
+              expect(res.body).to.have.property('session');
+              expect(res.body).to.have.property('user');
+            });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

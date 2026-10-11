@@ -1,0 +1,39 @@
+info:
+  name: get-transactions
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: "{{server}}/support/transactions/:id"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  params:
+    - name: id
+      value: 45fa6c3f-2d36-4ee1-8031-8c4e3cd92157
+      type: path
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("get one transaction data", function() {
+           expect(res.status).to.equal(200);
+           expect(res.body.entries).to.be.an('array');
+           expect(res.body).to.have.property('id');
+           expect(res.body).to.have.property('type');
+           expect(res.body).to.have.property('status');
+           expect(res.body).to.have.property('metadata');
+           expect(res.body).to.have.property('createdAt');
+           expect(res.body).to.have.property('reversesTransactionId');
+           expect(res.body).to.have.property('reversedByTransactionId');
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

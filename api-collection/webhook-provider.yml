@@ -1,7 +1,7 @@
 info:
   name: webhook-provider
   type: http
-  seq: 16
+  seq: 2
 
 http:
   method: POST
@@ -14,16 +14,16 @@ runtime:
       code: |-
         const CryptoJS = require('crypto-js');
 
-        const SECRET = 'change-me-to-a-long-random-webhook-signing-secret';
+        const SECRET = bru.getEnvVar('PAYMENT_WEBHOOK_SECRET');
 
         const timestamp = Math.floor(Date.now() / 1000).toString();
 
         const payload = {
           eventId: CryptoJS.lib.WordArray.random(16).toString(),
           type: 'payment.succeeded',
-          walletId: '2f72063e-0174-4858-8c84-0882298e62b0',
+          walletId: '0bfb8242-a213-4fba-9f89-010a330863e1',
           amount: 5000,
-          currency: 'RUB',
+          currency: 'INR',
         };
 
         const rawBody = JSON.stringify(payload);
@@ -38,9 +38,17 @@ runtime:
         req.setHeader('x-webhook-signature', signature);
         req.setHeader('x-webhook-timestamp', timestamp);
         req.setBody(rawBody);
+    - type: tests
+      code: |-
+        test("mock webhook provider api", function() {
+           expect(res.status).to.equal(201);
+           expect(res.body).to.have.property('status');
+           expect(res.body).to.have.property('transactionId');
+        });
 
 settings:
   encodeUrl: true
   timeout: 0
   followRedirects: true
   maxRedirects: 5
+  forwardAuthorizationHeader: true

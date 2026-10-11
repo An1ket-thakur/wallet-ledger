@@ -24,7 +24,7 @@ export class UsersService {
   findById(id: string) {
     return this.users.findOne({
       where: { id },
-      select: { email: true, id: true },
+      select: { email: true, id: true, fullName: true },
     });
   }
 

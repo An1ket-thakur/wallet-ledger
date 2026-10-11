@@ -1,0 +1,42 @@
+info:
+  name: refund
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{server}}/refunds"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+    - name: idempotency-key
+      value: "{{$randomUUID}}"
+  body:
+    type: json
+    data: |-
+      {
+        "transactionId":"0300e31d-07be-49cb-8f61-896ba4c219c7",
+        "reason": "testing refund"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("reverse or refund amounts from wallets", function() {
+           expect(res.status).to.equal(201);
+           expect(res.body).to.have.property('reversalTransactionId');
+           expect(res.body).to.have.property('originalTransactionId');
+           expect(res.body).to.have.property('amount');
+           expect(res.body).to.have.property('currency');
+           expect(res.body).to.have.property('reversedDebitWalletId');
+           expect(res.body).to.have.property('reversedCreditWalletId');
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

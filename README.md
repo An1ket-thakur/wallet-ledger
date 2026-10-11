@@ -75,10 +75,10 @@ All amounts are `bigint` **minor units** (cents) — never floats, never a `deci
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         HTTP Layer (Nest)                       │
-│  helmet · CORS allowlist · rate limiting · global exception      │
-│  filter · ValidationPipe · JwtAuthGuard · RolesGuard             │
-└───────────────────────────────┬───────────────────────────────┘
-                                 │
+│  helmet · CORS allowlist · rate limiting · global exception     │
+│  filter · ValidationPipe · JwtAuthGuard · RolesGuard            │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
         ┌────────────┬──────────┼──────────┬─────────────┐
         ▼            ▼          ▼          ▼             ▼
     Auth/Users   Wallets   Transactions  Webhooks      Refunds
@@ -87,23 +87,23 @@ All amounts are `bigint` **minor units** (cents) — never floats, never a `deci
     Argon2id)     reads)    withdraw)
         │            │          │          │             │
         └────────────┴──────────┼──────────┴─────────────┘
-                                 ▼
+                                ▼
                           LedgerService
               (the ONLY code path that writes to
                ledger_entries / transactions)
-                                 │
-                                 ▼
+                                │
+                                ▼
                       PostgreSQL (TypeORM)
           append-only triggers · balanced-transaction
           constraint trigger · composite currency FK
-                                 │
-              ┌──────────────────┴──────────────────┐
-              ▼                                      ▼
-      ReconciliationCron                        AuditService
-   (nightly + on-demand:                    (admin_actions table,
-    SUM(debits) = SUM(credits)               append-only, records
-    globally AND per-transaction)            who did what privileged
-                                              action, from where)
+                                │
+              ┌─────────────────┴──────────────────┐
+              ▼                                    ▼
+      ReconciliationCron                      AuditService
+   (nightly + on-demand:                   (admin_actions table,
+    SUM(debits) = SUM(credits)              append-only, records
+    globally AND per-transaction)           who did what privileged
+                                            action, from where)
 ```
 
 Supporting modules: `IdempotencyModule` (guards every mutating endpoint), `SupportModule` (read-only cross-user investigation for Support/Admin).

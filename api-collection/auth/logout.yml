@@ -1,0 +1,42 @@
+info:
+  name: logout
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{server}}/auth/logout"
+  headers:
+    - name: Authorization
+      value: Bearer  {{accessToken}}
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const refreshToken = bru.getVar('refreshToken');
+
+        const id = refreshToken.split('.')[0];
+
+        const payload = {
+          "tokenId": id
+        };
+
+        const rawBody = JSON.stringify(payload);
+
+        req.setHeader('Content-Type', 'application/json');
+        req.setBody(rawBody);
+    - type: tests
+      code: |-
+        test("logout user from current session", function() {
+          expect(res.status).to.equal(200);
+          expect(res.body).to.have.property('success');
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

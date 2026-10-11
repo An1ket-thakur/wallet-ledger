@@ -1,0 +1,35 @@
+info:
+  name: wallet-balance
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{server}}/wallets/:id/balance"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  params:
+    - name: id
+      value: 0bfb8242-a213-4fba-9f89-010a330863e1
+      type: path
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("gets balance of wallet", function() {
+           expect(res.status).to.equal(200);
+           expect(res.body).to.have.property('walletId');
+           expect(res.body).to.have.property('currency');
+           expect(res.body).to.have.property('balance');
+           expect(res.body).to.have.property('label');
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

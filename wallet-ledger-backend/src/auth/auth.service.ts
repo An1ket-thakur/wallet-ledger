@@ -52,7 +52,16 @@ export class AuthService {
       }),
     );
 
-    return this.issueTokenPair(user.id, user.email, user.role);
+    const session = await this.issueTokenPair(user.id, user.email, user.role);
+
+    return {
+      user: {
+        email: user.email,
+        fullName: user.fullName,
+        id: user.id,
+      },
+      session,
+    };
   }
 
   async login(dto: LoginDto) {

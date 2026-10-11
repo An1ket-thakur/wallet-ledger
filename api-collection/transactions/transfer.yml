@@ -1,0 +1,45 @@
+info:
+  name: transfer
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{server}}/transactions/transfer"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+    - name: idempotency-key
+      value: "{{$randomUUID}}"
+  body:
+    type: json
+    data: |-
+      {
+        "fromWalletId": "0bfb8242-a213-4fba-9f89-010a330863e1",
+        "toWalletId": "3f605aea-85c4-4b43-92f6-40b562b2f19d",
+        "amount": 500
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("transfers money from one wallet to another of user", function() {
+           expect(res.status).to.equal(201);
+           expect(res.body).to.have.property('transactionId');
+           expect(res.body).to.have.property('type');
+           expect(res.body).to.have.property('fromWalletId');
+           expect(res.body).to.have.property('toWalletId');
+           expect(res.body).to.have.property('amount');
+           expect(res.body).to.have.property('currency');
+           expect(res.body).to.have.property('fromBalanceAfter');
+           expect(res.body).to.have.property('toBalanceAfter');
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

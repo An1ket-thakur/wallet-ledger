@@ -1,7 +1,7 @@
 opencollection: 1.0.0
 
 info:
-  name: wallet
+  name: wallet-ledger-api
 config:
   proxy:
     inherit: true
@@ -18,8 +18,6 @@ request:
   variables:
     - name: server
       value: http://localhost:3000/api/v1
-    - name: PAYMENT_WEBHOOK_SECRET
-      value: change-me-to-a-long-random-webhook-signing-secret-1
 bundled: false
 extensions:
   bruno:

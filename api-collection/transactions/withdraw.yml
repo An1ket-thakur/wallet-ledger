@@ -1,0 +1,42 @@
+info:
+  name: withdraw
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{server}}/transactions/withdraw"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+    - name: Idempotency-key
+      value: "{{$randomUUID}}"
+  body:
+    type: json
+    data: |-
+      {
+        "walletId": "0bfb8242-a213-4fba-9f89-010a330863e1",
+        "amount": 500
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("withdraws money from user's wallet", function() {
+           expect(res.status).to.equal(201);
+           expect(res.body).to.have.property('transactionId');
+           expect(res.body).to.have.property('status');
+           expect(res.body).to.have.property('walletId');
+           expect(res.body).to.have.property('amount');
+           expect(res.body).to.have.property('currency');
+           expect(res.body).to.have.property('balanceAfter');
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
